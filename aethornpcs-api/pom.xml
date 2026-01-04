@@ -8,7 +8,7 @@
     <parent>
         <groupId>com.aethor</groupId>
         <artifactId>AethorNPCS</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
     </parent>
 
     <artifactId>aethornpcs-api</artifactId>
