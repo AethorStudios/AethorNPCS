@@ -1,0 +1,21 @@
+name: AethorNPCS
+version: ${project.version}
+main: com.aethor.aethornpcs.plugin.AethorNPCSPlugin
+api-version: '1.21'
+author: Aethor
+description: NPC Platform using MythicMobs and ModelEngine
+
+softdepend:
+  - MythicMobs
+  - ModelEngine
+
+permissions:
+  aethornpcs.admin:
+    description: Access to all AethorNPCS commands
+    default: op
+
+commands:
+  npc:
+    description: Main NPC management command
+    usage: /npc <create|remove|move|respawn|list>
+    permission: aethornpcs.admin

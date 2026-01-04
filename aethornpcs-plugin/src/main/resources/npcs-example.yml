@@ -1,0 +1,42 @@
+# Example NPC definitions
+# This file is auto-generated and managed by the plugin
+
+npcs:
+  questgiver_1:
+    world: world
+    x: 100.5
+    y: 64.0
+    z: 200.5
+    yaw: 90.0
+    pitch: 0.0
+    mythicMob: SkeletonKing
+    model: questgiver_male
+    displayName: "<gradient:gold:yellow>⚔ Quest Master</gradient>"
+    metadata:
+      quest_id: main_quest_1
+      npc_type: questgiver
+      dialogue_set: friendly
+    flags:
+      invulnerable: true
+      silent: true
+      noAI: true
+      lookAtPlayers: true
+      
+  merchant_1:
+    world: world
+    x: 150.0
+    y: 64.0
+    z: 250.0
+    yaw: 180.0
+    pitch: 0.0
+    mythicMob: Villager
+    displayName: "<#00FF00>$ Merchant</color>"
+    model: merchant_old
+    metadata:
+      shop_id: general_store
+      npc_type: merchant
+    flags:
+      invulnerable: true
+      silent: false
+      noAI: true
+      lookAtPlayers: true

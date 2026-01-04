@@ -1,0 +1,22 @@
+# AethorNPCS Configuration
+
+# Proximity detection settings
+proximity:
+  enabled: true
+  radius: 3.0
+  periodTicks: 10
+
+# Chunk unload strategy
+# DESPAWN_ON_UNLOAD: Remove entities when chunk unloads, respawn on load
+# KEEP_LOADED: Keep chunks loaded (not recommended)
+chunkStrategy: DESPAWN_ON_UNLOAD
+
+# Default flags applied to all NPCs (can be overridden per NPC)
+defaultFlags:
+  invulnerable: true
+  silent: true
+  noAI: true
+  lookAtPlayers: true
+
+# Enable debug logging
+debugLogging: false
