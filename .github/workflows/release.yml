@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn clean package -B
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: aethornpcs-plugin/target/AethorNPCS-*.jar
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          name: Release v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            ## AethorNPCS v${{ steps.get_version.outputs.VERSION }}
+            
+            Production-ready NPC plugin for Minecraft Paper 1.21.8
+            
+            ### Features
+            - MythicMobs & ModelEngine integration
+            - DecentHolograms display names with full color support
+            - Interactive GUI system with 6 screens
+            - Persistent NPC storage with chunk-aware spawning
+            - Collision disabled via scoreboard teams
+            - Commands: `/npc gui`, `create`, `remove`, `move`, `respawn`, `update all`, `cleanup`, `list`
+            - Chat input handler for text entry
+            - MiniMessage format support (rainbow, gradient, hex colors)
+            - Orphaned hologram cleanup system
+            
+            ### Installation
+            1. Download `AethorNPCS-${{ steps.get_version.outputs.VERSION }}.jar`
+            2. Place in your server's `plugins/` folder
+            3. Install dependencies: MythicMobs (required), ModelEngine (optional), DecentHolograms (optional)
+            4. Restart server
+            
+            ### Dependencies
+            - **Required:** Paper 1.21.8+, MythicMobs 5.7.1+
+            - **Optional:** ModelEngine R4.0.6+, DecentHolograms 2.9.9+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
