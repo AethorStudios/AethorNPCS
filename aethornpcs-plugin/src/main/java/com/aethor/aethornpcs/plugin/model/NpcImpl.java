@@ -15,7 +15,7 @@ public class NpcImpl implements Npc {
 
     private final String id;
     private UUID entityUuid;
-    private final NpcLocation location;
+    private NpcLocation location;
     private final String mythicMobInternalName;
     private final String modelEngineModelId;
     private final Map<String, String> metadata;
@@ -65,6 +65,10 @@ public class NpcImpl implements Npc {
     @Override
     public NpcLocation getLocation() {
         return location;
+    }
+    
+    public void setLocation(NpcLocation location) {
+        this.location = location;
     }
 
     @Override

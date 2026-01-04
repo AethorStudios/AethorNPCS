@@ -5,6 +5,8 @@ import com.aethor.aethornpcs.api.dto.NpcLocation;
 import com.aethor.aethornpcs.api.dto.NpcSpawnRequest;
 import com.aethor.aethornpcs.plugin.AethorNPCSPlugin;
 import com.aethor.aethornpcs.plugin.config.PluginConfiguration;
+import com.aethor.aethornpcs.plugin.gui.GuiManager;
+import com.aethor.aethornpcs.plugin.gui.screen.MainMenuGui;
 import com.aethor.aethornpcs.plugin.service.AethorNpcApiImpl;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -28,11 +30,13 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
     private final AethorNPCSPlugin plugin;
     private final AethorNpcApiImpl api;
     private final PluginConfiguration config;
+    private final GuiManager guiManager;
 
-    public NpcCommand(AethorNPCSPlugin plugin, AethorNpcApiImpl api, PluginConfiguration config) {
+    public NpcCommand(AethorNPCSPlugin plugin, AethorNpcApiImpl api, PluginConfiguration config, GuiManager guiManager) {
         this.plugin = plugin;
         this.api = api;
         this.config = config;
+        this.guiManager = guiManager;
     }
 
     @Override
@@ -50,6 +54,9 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         String subcommand = args[0].toLowerCase();
 
         switch (subcommand) {
+            case "gui":
+            case "menu":
+                return handleGui(sender);
             case "create":
                 return handleCreate(sender, args);
             case "remove":
@@ -64,6 +71,17 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
                 sendHelp(sender);
                 return true;
         }
+    }
+
+    private boolean handleGui(CommandSender sender) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(Component.text("This command can only be used by players.", NamedTextColor.RED));
+            return true;
+        }
+
+        Player player = (Player) sender;
+        guiManager.openScreen(player, new MainMenuGui(guiManager));
+        return true;
     }
 
     private boolean handleCreate(CommandSender sender, String[] args) {
@@ -261,6 +279,7 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
 
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(Component.text("=== AethorNPCS Commands ===", NamedTextColor.GOLD));
+        sender.sendMessage(Component.text("/npc gui - Open the NPC management GUI", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/npc create <id> <mythicMob> [model] [displayName...] - Create an NPC", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("  Example: /npc create guard_1 Villager <#FF0000>Red Guard", NamedTextColor.GRAY));
         sender.sendMessage(Component.text("  Supports MiniMessage: <gradient:red:blue>, <rainbow>, hex colors", NamedTextColor.GRAY));
@@ -278,7 +297,7 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            return Arrays.asList("create", "remove", "move", "respawn", "list");
+            return Arrays.asList("gui", "menu", "create", "remove", "move", "respawn", "list");
         }
 
         if (args.length == 2 && (args[0].equalsIgnoreCase("remove") || 

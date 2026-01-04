@@ -17,5 +17,5 @@ permissions:
 commands:
   npc:
     description: Main NPC management command
-    usage: /npc <create|remove|move|respawn|list>
+    usage: /npc <gui|create|remove|move|respawn|list>
     permission: aethornpcs.admin

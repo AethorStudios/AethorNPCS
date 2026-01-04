@@ -202,20 +202,26 @@ public class AethorNpcApiImpl implements AethorNpcApi {
         // Tag entity
         entity.addScoreboardTag("aethornpcs:npc");
         
-        // Set display name if configured
+        // Attach model if configured (do this before name to avoid conflicts)
+        if (npc.getModelEngineModelId() != null && modelEngineAdapter.isAvailable()) {
+            modelEngineAdapter.attachModel(entity, npc.getModelEngineModelId());
+        }
+        
+        // Set display name if configured (do this AFTER model attachment)
         if (npc.getDisplayName() != null && !npc.getDisplayName().isEmpty()) {
+            // First set via Bukkit API (for non-MythicMobs entities)
             MiniMessage miniMessage = MiniMessage.miniMessage();
             Component displayName = miniMessage.deserialize(npc.getDisplayName());
             entity.customName(displayName);
             entity.setCustomNameVisible(true);
+            
+            // Then set via MythicMobs API (this takes precedence for MythicMobs)
+            mythicMobAdapter.setDisplayName(entity.getUniqueId(), npc.getDisplayName());
+            
+            plugin.debug("Set custom name for NPC " + npc.getId() + ": " + npc.getDisplayName());
         }
 
-        // ity.getPersistentDataContainer().set(npcIdKey, PersistentDataType.STRING, npc.getId());
-
-        // Attach model if configured
-        if (npc.getModelEngineModelId() != null && modelEngineAdapter.isAvailable()) {
-            modelEngineAdapter.attachModel(entity, npc.getModelEngineModelId());
-        }
+        // entity.getPersistentDataContainer().set(npcIdKey, PersistentDataType.STRING, npc.getId());
 
         // Link entity to NPC
         registry.linkEntity(npc.getId(), entity.getUniqueId());
@@ -269,5 +275,82 @@ public class AethorNpcApiImpl implements AethorNpcApi {
      */
     public NamespacedKey getNpcIdKey() {
         return npcIdKey;
+    }
+    
+    /**
+     * Create a new NPC from a spawn request.
+     * This is a convenience method that combines spawn() and persistence.
+     */
+    public Npc createNpc(NpcSpawnRequest request) {
+        Npc npc = spawn(request);
+        persistence.save();
+        return npc;
+    }
+    
+    /**
+     * Remove an NPC by ID.
+     */
+    public void removeNpc(String id) {
+        Optional<NpcImpl> npcOpt = registry.getNpc(id);
+        if (!npcOpt.isPresent()) {
+            throw new IllegalArgumentException("NPC with ID " + id + " does not exist");
+        }
+        
+        NpcImpl npc = npcOpt.get();
+        
+        // Despawn if spawned
+        if (npc.isSpawned()) {
+            despawn(id);
+        }
+        
+        // Unregister
+        registry.unregister(id);
+        persistence.save();
+    }
+    
+    /**
+     * Move an NPC to a new location.
+     */
+    public void moveNpc(String id, String world, double x, double y, double z, float yaw, float pitch) {
+        Optional<NpcImpl> npcOpt = registry.getNpc(id);
+        if (!npcOpt.isPresent()) {
+            throw new IllegalArgumentException("NPC with ID " + id + " does not exist");
+        }
+        
+        NpcImpl npc = npcOpt.get();
+        NpcLocation newLocation = new NpcLocation(world, x, y, z, yaw, pitch);
+        
+        // Update location
+        npc.setLocation(newLocation);
+        
+        // Respawn if currently spawned
+        if (npc.isSpawned()) {
+            despawnEntity(npc);
+            Entity entity = spawnEntity(npc);
+            registry.linkEntity(npc.getId(), entity.getUniqueId());
+        }
+        
+        persistence.save();
+    }
+    
+    /**
+     * Respawn an NPC (despawn and spawn again at same location).
+     */
+    public void respawnNpc(String id) {
+        Optional<NpcImpl> npcOpt = registry.getNpc(id);
+        if (!npcOpt.isPresent()) {
+            throw new IllegalArgumentException("NPC with ID " + id + " does not exist");
+        }
+        
+        NpcImpl npc = npcOpt.get();
+        
+        // Despawn if spawned
+        if (npc.isSpawned()) {
+            despawnEntity(npc);
+        }
+        
+        // Spawn again
+        Entity entity = spawnEntity(npc);
+        registry.linkEntity(npc.getId(), entity.getUniqueId());
     }
 }

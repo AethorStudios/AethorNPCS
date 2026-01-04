@@ -75,6 +75,26 @@ public class MythicMobAdapter {
             return Optional.empty();
         }
     }
+    
+    /**
+     * Set the display name of a MythicMob using MythicMobs' API.
+     * This ensures the name persists and isn't overridden by MythicMobs.
+     */
+    public void setDisplayName(UUID entityUuid, String displayName) {
+        if (!available) {
+            return;
+        }
+        
+        try {
+            Optional<ActiveMob> activeMob = getActiveMob(entityUuid);
+            if (activeMob.isPresent()) {
+                activeMob.get().setDisplayName(displayName);
+                plugin.debug("Set MythicMob display name via API: " + displayName);
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error setting MythicMob display name: " + e.getMessage());
+        }
+    }
 
     /**
      * Remove a MythicMob entity.

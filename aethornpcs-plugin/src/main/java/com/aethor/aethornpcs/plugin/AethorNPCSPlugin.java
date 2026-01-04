@@ -5,6 +5,7 @@ import com.aethor.aethornpcs.plugin.adapter.ModelEngineAdapter;
 import com.aethor.aethornpcs.plugin.adapter.MythicMobAdapter;
 import com.aethor.aethornpcs.plugin.command.NpcCommand;
 import com.aethor.aethornpcs.plugin.config.PluginConfiguration;
+import com.aethor.aethornpcs.plugin.gui.GuiManager;
 import com.aethor.aethornpcs.plugin.listener.ChunkListener;
 import com.aethor.aethornpcs.plugin.listener.InteractionListener;
 import com.aethor.aethornpcs.plugin.persistence.NpcPersistence;
@@ -22,6 +23,8 @@ import java.util.logging.Level;
  */
 public final class AethorNPCSPlugin extends JavaPlugin {
 
+    private static AethorNPCSPlugin instance;
+    
     private PluginConfiguration configuration;
     private MythicMobAdapter mythicMobAdapter;
     private ModelEngineAdapter modelEngineAdapter;
@@ -29,9 +32,11 @@ public final class AethorNPCSPlugin extends JavaPlugin {
     private NpcPersistence npcPersistence;
     private AethorNpcApiImpl apiImplementation;
     private ProximityDetector proximityDetector;
-
+    private GuiManager guiManager;
+        
     @Override
     public void onEnable() {
+        instance = this;
         getLogger().info("Initializing AethorNPCS...");
 
         // Save default config
@@ -82,6 +87,9 @@ public final class AethorNPCSPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new InteractionListener(this, apiImplementation, npcRegistry), this);
         getServer().getPluginManager().registerEvents(new ChunkListener(this, apiImplementation, npcRegistry), this);
 
+        // Initialize GUI manager
+        guiManager = new GuiManager(this);
+
         // Initialize proximity detector
         if (configuration.isProximityEnabled()) {
             proximityDetector = new ProximityDetector(this, npcRegistry, configuration);
@@ -89,7 +97,7 @@ public final class AethorNPCSPlugin extends JavaPlugin {
         }
 
         // Register command
-        NpcCommand npcCommand = new NpcCommand(this, apiImplementation, configuration);
+        NpcCommand npcCommand = new NpcCommand(this, apiImplementation, configuration, guiManager);
         getCommand("npc").setExecutor(npcCommand);
         getCommand("npc").setTabCompleter(npcCommand);
 
@@ -160,5 +168,17 @@ public final class AethorNPCSPlugin extends JavaPlugin {
         if (configuration != null && configuration.isDebugLogging()) {
             getLogger().log(Level.INFO, "[DEBUG] " + message);
         }
+    }
+    
+    public static AethorNPCSPlugin getInstance() {
+        return instance;
+    }
+    
+    public AethorNpcApiImpl getApiImpl() {
+        return apiImplementation;
+    }
+    
+    public GuiManager getGuiManager() {
+        return guiManager;
     }
 }
