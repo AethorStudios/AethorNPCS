@@ -1,0 +1,182 @@
+name: Discord Notifications
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    types: [opened, reopened, edited, labeled, unlabeled, closed, synchronize]
+  release:
+    types: [published, created]
+
+permissions:
+  contents: read
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure jq is available
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Send commit summary to Discord (push)
+        if: ${{ github.event_name == 'push' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "Missing DISCORD_WEBHOOK_URL secret"; exit 1;
+          fi
+          REPO="$GITHUB_REPOSITORY"
+          BRANCH="$GITHUB_REF_NAME"
+          COMPARE_URL="${{ github.event.compare }}"
+          PUSHER="$(jq -r '.pusher.name' "$GITHUB_EVENT_PATH")"
+          COMMITS="$(jq -r '[.commits[] | "- [" + (.id[0:7]) + "](" + .url + ") " + (.message | gsub("\\r?\\n"; " ")) + " (by " + .author.name + ")"] | join("\n")' "$GITHUB_EVENT_PATH")"
+          COUNT="$(jq -r '.commits | length' "$GITHUB_EVENT_PATH")"
+          LOGIN="$(jq -r '.sender.login' "$GITHUB_EVENT_PATH")"
+          AVATAR="$(jq -r '.sender.avatar_url' "$GITHUB_EVENT_PATH")"
+          AUTHOR_URL="https://github.com/$LOGIN"
+          AVATAR_PNG="https://github.com/$LOGIN.png"
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          jq -n \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg pusher "$PUSHER" \
+            --arg commits "$COMMITS" \
+            --arg url "$COMPARE_URL" \
+            --arg count "$COUNT" \
+            --arg avatar "$AVATAR" \
+            --arg author_url "$AUTHOR_URL" \
+            --arg avatar_png "$AVATAR_PNG" \
+            --arg timestamp "$TIMESTAMP" \
+            '{
+              username: "AethorNPCS CI",
+              avatar_url: $avatar,
+              embeds: [ {
+                title: ("Push to " + $repo + "@" + $branch),
+                url: $url,
+                description: ("Repo: " + $repo + "\n" +
+                               "Branch: " + $branch + "\n" +
+                               "Pusher: " + $pusher + "\n\n" +
+                               "Commits:\n" + $commits),
+                color: 5814783,
+                author: { name: $pusher, url: $author_url, icon_url: $avatar_png },
+                fields: [
+                  { name: "Branch", value: $branch, inline: true },
+                  { name: "Pusher", value: $pusher, inline: true },
+                  { name: "Commit Count", value: $count, inline: true }
+                ],
+                timestamp: $timestamp
+              } ]
+            }' > payload.json
+
+          curl -s -o /dev/null -X POST -H "Content-Type: application/json" -d @payload.json "$WEBHOOK_URL"
+
+      - name: Send Release notification to Discord (release)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "Missing DISCORD_WEBHOOK_URL secret"; exit 1;
+          fi
+          REPO="$GITHUB_REPOSITORY"
+          ACTION="$(jq -r '.action' "$GITHUB_EVENT_PATH")"
+          TAG="$(jq -r '.release.tag_name // ""' "$GITHUB_EVENT_PATH")"
+          NAME="$(jq -r '.release.name // ""' "$GITHUB_EVENT_PATH")"
+          URL="$(jq -r '.release.html_url' "$GITHUB_EVENT_PATH")"
+          AUTHOR_LOGIN="$(jq -r '.release.author.login' "$GITHUB_EVENT_PATH")"
+          AUTHOR_AVATAR="$(jq -r '.release.author.avatar_url' "$GITHUB_EVENT_PATH")"
+          AUTHOR_URL="https://github.com/$AUTHOR_LOGIN"
+          TIMESTAMP="$(jq -r '.release.published_at // .release.created_at // empty' "$GITHUB_EVENT_PATH")"
+          [ -z "$TIMESTAMP" ] && TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          ASSETS="$(jq -r '[.release.assets[] | "- [" + .name + "](" + .browser_download_url + ")"] | join("\n")' "$GITHUB_EVENT_PATH")"
+          ASSET_COUNT="$(jq -r '.release.assets | length' "$GITHUB_EVENT_PATH")"
+
+          TITLE="Release ${TAG:-$NAME}"
+          VERSION="${TAG:-$NAME}"
+
+          jq -n \
+            --arg repo "$REPO" \
+            --arg title "$TITLE" \
+            --arg url "$URL" \
+            --arg version "$VERSION" \
+            --arg assets "$ASSETS" \
+            --arg asset_count "$ASSET_COUNT" \
+            --arg author_login "$AUTHOR_LOGIN" \
+            --arg author_url "$AUTHOR_URL" \
+            --arg author_avatar "$AUTHOR_AVATAR" \
+            --arg timestamp "$TIMESTAMP" \
+            '{
+              username: "AethorNPCS CI",
+              embeds: [ {
+                title: $title,
+                url: $url,
+                color: 15105570,
+                description: ("Assets:\n" + ($assets // "(none)")),
+                fields: [
+                  { name: "Version", value: $version, inline: true },
+                  { name: "Assets", value: $asset_count, inline: true }
+                ],
+                author: { name: $author_login, url: $author_url, icon_url: $author_avatar },
+                timestamp: $timestamp
+              } ]
+            }' > payload.json
+
+          curl -s -o /dev/null -X POST -H "Content-Type: application/json" -d @payload.json "$WEBHOOK_URL"
+
+      - name: Send PR notification to Discord (pull_request)
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "Missing DISCORD_WEBHOOK_URL secret"; exit 1;
+          fi
+          REPO="$GITHUB_REPOSITORY"
+          ACTION="$(jq -r '.action' "$GITHUB_EVENT_PATH")"
+          NUMBER="$(jq -r '.pull_request.number' "$GITHUB_EVENT_PATH")"
+          TITLE="$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")"
+          URL="$(jq -r '.pull_request.html_url' "$GITHUB_EVENT_PATH")"
+          BASE="$(jq -r '.pull_request.base.ref' "$GITHUB_EVENT_PATH")"
+          HEAD="$(jq -r '.pull_request.head.ref' "$GITHUB_EVENT_PATH")"
+          LOGIN="$(jq -r '.pull_request.user.login' "$GITHUB_EVENT_PATH")"
+          AUTHOR_URL="$(jq -r '.pull_request.user.html_url' "$GITHUB_EVENT_PATH")"
+          AVATAR="$(jq -r '.pull_request.user.avatar_url' "$GITHUB_EVENT_PATH")"
+          MERGED="$(jq -r '.pull_request.merged' "$GITHUB_EVENT_PATH")"
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          STATUS="$ACTION"
+          if [ "$ACTION" = "closed" ] && [ "$MERGED" = "true" ]; then
+            STATUS="merged"
+          fi
+
+          jq -n \
+            --arg repo "$REPO" \
+            --arg action "$STATUS" \
+            --arg number "$NUMBER" \
+            --arg title "$TITLE" \
+            --arg url "$URL" \
+            --arg base "$BASE" \
+            --arg head "$HEAD" \
+            --arg login "$LOGIN" \
+            --arg author_url "$AUTHOR_URL" \
+            --arg avatar "$AVATAR" \
+            --arg timestamp "$TIMESTAMP" \
+            '{
+              username: "AethorNPCS CI",
+              embeds: [ {
+                title: ("PR #" + $number + ": " + $title),
+                url: $url,
+                color: 3447003,
+                fields: [
+                  { name: "Status", value: $action, inline: true },
+                  { name: "Base", value: $base, inline: true },
+                  { name: "Head", value: $head, inline: true }
+                ],
+                author: { name: $login, url: $author_url, icon_url: $avatar },
+                timestamp: $timestamp
+              } ]
+            }' > payload.json
+
+          curl -s -o /dev/null -X POST -H "Content-Type: application/json" -d @payload.json "$WEBHOOK_URL"
