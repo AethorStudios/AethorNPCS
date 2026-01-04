@@ -8,6 +8,7 @@ description: NPC Platform using MythicMobs and ModelEngine
 softdepend:
   - MythicMobs
   - ModelEngine
+  - DecentHolograms
 
 permissions:
   aethornpcs.admin:

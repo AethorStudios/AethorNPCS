@@ -3,6 +3,7 @@ package com.aethor.aethornpcs.plugin;
 import com.aethor.aethornpcs.api.AethorNpcApi;
 import com.aethor.aethornpcs.plugin.adapter.ModelEngineAdapter;
 import com.aethor.aethornpcs.plugin.adapter.MythicMobAdapter;
+import com.aethor.aethornpcs.plugin.integrations.HologramAdapter;
 import com.aethor.aethornpcs.plugin.command.NpcCommand;
 import com.aethor.aethornpcs.plugin.config.PluginConfiguration;
 import com.aethor.aethornpcs.plugin.gui.GuiManager;
@@ -28,6 +29,7 @@ public final class AethorNPCSPlugin extends JavaPlugin {
     private PluginConfiguration configuration;
     private MythicMobAdapter mythicMobAdapter;
     private ModelEngineAdapter modelEngineAdapter;
+    private HologramAdapter hologramAdapter;
     private NpcRegistry npcRegistry;
     private NpcPersistence npcPersistence;
     private AethorNpcApiImpl apiImplementation;
@@ -55,6 +57,7 @@ public final class AethorNPCSPlugin extends JavaPlugin {
         // Initialize adapters
         mythicMobAdapter = new MythicMobAdapter(this);
         modelEngineAdapter = new ModelEngineAdapter(this);
+        hologramAdapter = new HologramAdapter(this);
 
         // Initialize registry
         npcRegistry = new NpcRegistry();
@@ -69,6 +72,7 @@ public final class AethorNPCSPlugin extends JavaPlugin {
                 npcPersistence,
                 mythicMobAdapter,
                 modelEngineAdapter,
+                hologramAdapter,
                 configuration
         );
 
@@ -82,6 +86,12 @@ public final class AethorNPCSPlugin extends JavaPlugin {
 
         // Load persisted NPCs
         npcPersistence.load();
+        
+        // Spawn loaded NPCs after a delay to ensure chunks/worlds are ready
+        // NPCs in unloaded chunks will spawn when those chunks load (via ChunkListener)
+        Bukkit.getScheduler().runTaskLater(this, () -> {
+            apiImplementation.loadAndSpawnAll();
+        }, 20L); // 20 ticks = 1 second delay
 
         // Register listeners
         getServer().getPluginManager().registerEvents(new InteractionListener(this, apiImplementation, npcRegistry), this);
@@ -116,6 +126,11 @@ public final class AethorNPCSPlugin extends JavaPlugin {
         // Despawn all NPCs
         if (apiImplementation != null) {
             apiImplementation.despawnAll();
+        }
+        
+        // Remove all holograms
+        if (hologramAdapter != null) {
+            hologramAdapter.removeAllHolograms();
         }
 
         // Save NPCs

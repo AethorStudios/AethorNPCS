@@ -65,6 +65,10 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
                 return handleMove(sender, args);
             case "respawn":
                 return handleRespawn(sender, args);
+            case "update":
+                return handleUpdate(sender, args);
+            case "cleanup":
+                return handleCleanup(sender);
             case "list":
                 return handleList(sender);
             default:
@@ -255,6 +259,43 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleUpdate(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage(Component.text("Usage: /npc update all", NamedTextColor.RED));
+            return true;
+        }
+
+        if (!args[1].equalsIgnoreCase("all")) {
+            sender.sendMessage(Component.text("Usage: /npc update all", NamedTextColor.RED));
+            return true;
+        }
+
+        sender.sendMessage(Component.text("Updating all NPCs...", NamedTextColor.YELLOW));
+        
+        // Despawn all current NPCs
+        api.despawnAll();
+        
+        // Reload and spawn from config
+        api.loadAndSpawnAll();
+        
+        sender.sendMessage(Component.text("All NPCs have been updated and respawned!", NamedTextColor.GREEN));
+        return true;
+    }
+
+    private boolean handleCleanup(CommandSender sender) {
+        sender.sendMessage(Component.text("Cleaning up orphaned holograms...", NamedTextColor.YELLOW));
+        
+        int cleaned = api.cleanupOrphanedHolograms();
+        
+        if (cleaned > 0) {
+            sender.sendMessage(Component.text("Removed " + cleaned + " orphaned hologram(s).", NamedTextColor.GREEN));
+        } else {
+            sender.sendMessage(Component.text("No orphaned holograms found.", NamedTextColor.GREEN));
+        }
+        
+        return true;
+    }
+
     private boolean handleList(CommandSender sender) {
         Collection<Npc> npcs = api.getAllNpcs();
 
@@ -286,6 +327,8 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Component.text("/npc remove <id> - Remove an NPC", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/npc move <id> - Move an NPC to your location", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/npc respawn <id> - Respawn an NPC", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("/npc update all - Reload and respawn all NPCs", NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text("/npc cleanup - Remove orphaned holograms", NamedTextColor.YELLOW));
         sender.sendMessage(Component.text("/npc list - List all NPCs", NamedTextColor.YELLOW));
     }
 
@@ -297,7 +340,11 @@ public class NpcCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            return Arrays.asList("gui", "menu", "create", "remove", "move", "respawn", "list");
+            return Arrays.asList("gui", "menu", "create", "remove", "move", "respawn", "update", "cleanup", "list");
+        }
+
+        if (args.length == 2 && args[0].equalsIgnoreCase("update")) {
+            return Collections.singletonList("all");
         }
 
         if (args.length == 2 && (args[0].equalsIgnoreCase("remove") || 

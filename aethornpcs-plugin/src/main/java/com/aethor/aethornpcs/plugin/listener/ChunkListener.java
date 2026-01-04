@@ -55,13 +55,22 @@ public class ChunkListener implements Listener {
 
             if (npcChunkX == chunkX && npcChunkZ == chunkZ) {
                 plugin.debug("Spawning NPC " + npc.getId() + " in loaded chunk");
-                api.spawnEntity(npc);
+                Entity entity = api.spawnEntity(npc);
+                if (entity != null) {
+                    registry.linkEntity(npc.getId(), entity.getUniqueId());
+                }
             }
         }
     }
 
     @EventHandler
     public void onChunkUnload(ChunkUnloadEvent event) {
+        // Don't despawn NPCs on chunk unload - let them persist
+        // This prevents NPCs from disappearing when chunks unload temporarily
+        // They will respawn when chunks load via ChunkLoadEvent
+        return;
+        
+        /* Old despawn logic - disabled
         // Only despawn if configured to do so
         if (!"DESPAWN_ON_UNLOAD".equals(plugin.getConfiguration().getChunkStrategy())) {
             return;
@@ -79,5 +88,6 @@ public class ChunkListener implements Listener {
                 api.despawnEntity(npc);
             }
         }
+        */
     }
 }

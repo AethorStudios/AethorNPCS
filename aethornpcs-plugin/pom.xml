@@ -22,6 +22,14 @@
             <id>lumine-releases</id>
             <url>https://mvn.lumine.io/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>codemc</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -51,6 +59,14 @@
             <groupId>com.ticxo.modelengine</groupId>
             <artifactId>ModelEngine</artifactId>
             <version>R4.0.6</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- DecentHolograms - from JitPack -->
+        <dependency>
+            <groupId>com.github.decentsoftware-eu</groupId>
+            <artifactId>decentholograms</artifactId>
+            <version>2.9.9</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
