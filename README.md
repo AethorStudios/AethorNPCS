@@ -471,4 +471,4 @@ For issues, questions, or feature requests, please refer to the project document
 
 ---
 
-**Built with ❤️ for the Minecraft Paper community**
+**Omega Brain Rize Moment**
