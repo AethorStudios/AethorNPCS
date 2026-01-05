@@ -17,6 +17,17 @@ public interface Npc {
     String getId();
 
     /**
+     * Get the name of this NPC for display purposes (e.g., in dialogue or quests).
+     * Returns the display name if set, otherwise falls back to the ID.
+     * 
+     * @return NPC name for display
+     */
+    default String getName() {
+        String displayName = getDisplayName();
+        return displayName != null ? displayName : getId();
+    }
+
+    /**
      * Get the spawned entity's UUID.
      * 
      * @return Entity UUID, or null if not currently spawned

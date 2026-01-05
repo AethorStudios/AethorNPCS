@@ -54,6 +54,11 @@ public class NpcImpl implements Npc {
     }
 
     @Override
+    public String getName() {
+        return displayName != null ? displayName : id;
+    }
+
+    @Override
     public UUID getEntityUuid() {
         return entityUuid;
     }
